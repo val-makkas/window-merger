@@ -19,17 +19,19 @@ int main(int argc, char *argv[])
     int offsetY = (argc >= 4) ? atoi(argv[3]) : 0;
 
     HWND overlayHwnd = FindWindowA(NULL, overlayTitle.c_str());
-    HWND targetHwnd = FindWindowA(NULL, targetTitle.c_str());
+    HWND mpvHwnd = FindWindowA(NULL, targetTitle.c_str());
+    HWND electronHwnd = NULL;
+    HWND currentTargetHwnd = mpvHwnd;
     std::cout << "[overlay-follower] Started. Overlay: '" << overlayTitle << "', Target: '" << targetTitle << "', OffsetY: " << offsetY << std::endl;
 
     // Try to find windows for up to 5 seconds
     int retryCount = 0;
-    while ((!overlayHwnd || !targetHwnd) && retryCount < 500) {
+    while ((!overlayHwnd || !mpvHwnd) && retryCount < 500) {
         Sleep(10);
         overlayHwnd = FindWindowA(NULL, overlayTitle.c_str());
-        targetHwnd = FindWindowA(NULL, targetTitle.c_str());
+        mpvHwnd = FindWindowA(NULL, targetTitle.c_str());
         if (retryCount % 50 == 0) {
-            std::cout << "[overlay-follower] Waiting for windows... overlayHwnd=" << overlayHwnd << ", targetHwnd=" << targetHwnd << std::endl;
+            std::cout << "[overlay-follower] Waiting for windows... overlayHwnd=" << overlayHwnd << ", mpvHwnd=" << mpvHwnd << std::endl;
         }
         retryCount++;
     }
@@ -37,7 +39,7 @@ int main(int argc, char *argv[])
         std::cerr << "[overlay-follower] Could not find overlay window after retry: " << overlayTitle << std::endl;
         return 2;
     }
-    if (!targetHwnd) {
+    if (!mpvHwnd) {
         std::cerr << "[overlay-follower] Could not find target window after retry: " << targetTitle << std::endl;
         return 3;
     }
@@ -45,10 +47,29 @@ int main(int argc, char *argv[])
 
     RECT lastRect = {0};
     int bringToTopCounter = 0;
-    while (IsWindow(overlayHwnd) && IsWindow(targetHwnd))
+    int checkEmbedCounter = 0;
+    while (IsWindow(overlayHwnd) && IsWindow(mpvHwnd))
     {
+        // Every 100ms, check if MPV is embedded in another window
+        if (++checkEmbedCounter >= 25) {
+            HWND parent = GetParent(mpvHwnd);
+            if (parent && parent != electronHwnd) {
+                // MPV is embedded, switch to parent (Electron)
+                electronHwnd = parent;
+                if (currentTargetHwnd != electronHwnd) {
+                    std::cout << "[overlay-follower] MPV is embedded, switching tracking to Electron window: " << electronHwnd << std::endl;
+                    currentTargetHwnd = electronHwnd;
+                }
+            } else if (!parent && currentTargetHwnd != mpvHwnd) {
+                // MPV is top-level again
+                std::cout << "[overlay-follower] MPV is top-level, switching tracking back to MPV window: " << mpvHwnd << std::endl;
+                currentTargetHwnd = mpvHwnd;
+            }
+            checkEmbedCounter = 0;
+        }
+
         RECT rect;
-        if (GetWindowRect(targetHwnd, &rect))
+        if (GetWindowRect(currentTargetHwnd, &rect))
         {
             int width = rect.right - rect.left;
             int height = rect.bottom - rect.top - offsetY;
@@ -59,10 +80,17 @@ int main(int argc, char *argv[])
                 overlayHwnd, HWND_TOPMOST,
                 rect.left, rect.top + offsetY,
                 width, height,
-                SWP_SHOWWINDOW | SWP_NOACTIVATE);
+                SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_NOZORDER);
             lastRect = rect;
         } else {
             std::cerr << "[overlay-follower] Failed to get target window rect." << std::endl;
+        }
+        // If the target window is not the foreground window, minimize overlay
+        HWND fg = GetForegroundWindow();
+        if (fg != currentTargetHwnd && fg != overlayHwnd) {
+            ShowWindow(overlayHwnd, SW_MINIMIZE);
+        } else {
+            ShowWindow(overlayHwnd, SW_RESTORE);
         }
         // Every ~250ms, try to bring overlay to top (without stealing focus)
         if (++bringToTopCounter >= 30)
