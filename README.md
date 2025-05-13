@@ -19,6 +19,11 @@ A simple utility for merging or managing windows on Windows OS.
 - `window-merger.exe` — Compiled executable
 - `window-merger.obj` — Object file
 
+### BUILD
+```sh
+    cl /EHsc window-merger.cpp user32.lib
+```
+
 ## License
 
 MIT License
