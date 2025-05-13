@@ -22,6 +22,7 @@ A simple utility for merging or managing windows on Windows OS.
 ### BUILD
 ```sh
     cl /EHsc window-merger.cpp user32.lib
+    g++ overlay-follower.cpp -o overlay-follower.exe -mwindows
 ```
 
 ## License
