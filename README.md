@@ -1,30 +1,35 @@
 # absolute-cinema-window-merger
 
-A simple utility for merging or managing windows on Windows OS.
+A lightweight C++ utility for merging or embedding one window inside another on Windows OS. Useful for advanced window management, automation, or integrating applications with custom workflows.
 
 ## Features
 
 - Written in C++
-- Includes a pre-built executable (`window-merger.exe`)
-- Useful for window management automation
+- Embeds any window as a child of another window
+- Blocks mouse and focus events to the embedded window (optional)
+- Dynamically resizes the embedded window to match the parent
 
 ## Usage
 
-1. Place `window-merger.exe` on your system.
-2. Run from the command line or integrate into scripts as needed.
+1. Place `window-merger.exe` in a convenient location on your system.
+2. Run from the command line or integrate into scripts as needed. Example usage:
 
-## Files
+   ```sh
+   window-merger.exe "<child_window_title>" "<parent_window_title>"
+   ```
+   - Replace `<child_window_title>` with the exact title of the window you want to embed.
+   - Replace `<parent_window_title>` with the exact title of the window you want to use as the parent.
 
-- `window-merger.cpp` — Source code
-- `window-merger.exe` — Compiled executable
-- `window-merger.obj` — Object file
+3. The child window will be embedded into the parent window and will resize automatically.
 
-### BUILD
+## Build Instructions
+
+To build from source, use the following command (requires g++ and Windows development libraries):
+
 ```sh
-    cl /EHsc window-merger.cpp user32.lib
-    g++ overlay-follower.cpp -o overlay-follower.exe -mwindows
+ g++ window-merger.cpp -o window-merger.exe -lcomctl32 -static -static-libgcc -static-libstdc++
 ```
 
 ## License
 
-MIT License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
