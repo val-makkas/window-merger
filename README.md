@@ -1,4 +1,4 @@
-# absolute-cinema-window-merger
+# window-merger
 
 A lightweight C++ utility for merging or embedding one window inside another on Windows OS. Useful for advanced window management, automation, or integrating applications with custom workflows.
 
